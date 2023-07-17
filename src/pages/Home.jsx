@@ -1,6 +1,7 @@
 import React from 'react'
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { urlbase } from '../utilies/apibase';
 
 
 function Home() {
@@ -18,7 +19,7 @@ function Home() {
 
   //   this function for get data from backend to show all status of seats -------------
    const getDatafromserver =  async ()=>{      
-       await axios.get("http://localhost:5000/seats").then((res)=>{
+       await axios.get( urlbase + "/seats").then((res)=>{
              console.log("rrrres", res.data);
              setData(res.data);
        }).catch((err)=>{
@@ -32,7 +33,7 @@ function Home() {
               "number" : stack,
               "booked_status" : type
           }   
-          await axios.patch("http://localhost:5000/seats", payload ).then((res)=>{
+          await axios.patch(  urlbase  + "/seats", payload ).then((res)=>{
               console.log( "updated",res);
                  
           }).catch((err)=>{
