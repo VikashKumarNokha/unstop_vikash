@@ -1,6 +1,6 @@
 import React from 'react'
 import { useState, useEffect } from 'react';
-import {masterdata} from "../utilies/MasterData"
+import axios from 'axios';
 
 
 function Home() {
@@ -9,13 +9,38 @@ function Home() {
     const [Data, setData] = useState([]);
 
     useEffect(()=>{
-        if(Data.length == 0){
-           setData(masterdata);
+         if(Data.length == 0){
+            getDatafromserver()
         }
     },[]);
 
   console.log("data", Data);
 
+  //   this function for get data from backend to show all status of seats -------------
+   const getDatafromserver =  async ()=>{      
+       await axios.get("http://localhost:5000/seats").then((res)=>{
+             console.log("rrrres", res.data);
+             setData(res.data);
+       }).catch((err)=>{
+          console.log("err", err);
+       }) 
+   }
+
+    //    this function for update the booked seats on server side  -----------
+   const updateToserver = async (stack, type)=>{
+          const payload = {
+              "number" : stack,
+              "booked_status" : type
+          }   
+          await axios.patch("http://localhost:5000/seats", payload ).then((res)=>{
+              console.log( "updated",res);
+                 
+          }).catch((err)=>{
+             console.log("err", err);
+          })
+   }
+
+  //   this function get available seats and  call the function for update the booking seats-------
      const bookTicket = (number_of_booking) =>{
 
           if( number_of_booking <=0 || number_of_booking > 7){
@@ -43,15 +68,8 @@ function Home() {
                      for(var j= 0; j< N; j++){
                          stack.pop();
                      }
-                      console.log("stack", stack);
-                    var data =  Data.map((e)=>{
-                        if(stack.includes(e.number)){
-                         return {...e, booked_status : true };
-                        }else{
-                           return e;
-                        }
-                     })
-                    setData(data); 
+                   
+                    updateToserver(stack, true).then(()=>getDatafromserver()) 
                     setStacknumber(stack);
                     return    
                 }else{
@@ -91,28 +109,20 @@ function Home() {
               stack.push(unbooked[i].number)
          }
 
-         var data =  Data.map((e)=>{
-          if(stack.includes(e.number)){ 
-           return {...e, booked_status : true };
-          }else{
-             return e;
-          }
-       })
-      setData(data); 
+      updateToserver(stack, true).then(()=>getDatafromserver()) 
       setStacknumber(stack);
        return
 
      }
 
+      //   this function for reset all booked seats --------------
      const resetbookedseat = ()=>{
-          
-      var data =  Data.map((e)=>{
-         return {...e, booked_status : false };   
-     })
-
-    setData(data); 
+         var stack = [];
+         for(var i=0; i< 80; i++){
+             stack.push(i+1);
+         }
+    updateToserver(stack, false).then(()=>getDatafromserver()) 
     setStacknumber([]);
-
      } 
 
   return (
@@ -146,20 +156,22 @@ function Home() {
 
               <div style={{display :"flex", justifyContent :"flex-start" , backgroundColor : "wheat"}}    >
                  <p style={{marginRight :"5px"}} >Current Seats Booked :</p>
-                 <p> 
+                 <p style={{fontWeight :"bold"}} > 
                    {
-                     stacknumber.length > 0 ? `${ stacknumber.map((e)=> e ) }` :"All seats available"
+                     stacknumber.length > 0 ? `${ stacknumber.map((e)=> e ) }` :""
                    }
                   </p>
               </div>
-            
-              <p style={{textAlign : "left"}} >Number of Seats:</p>
-              <p style={{textAlign :"left", fontWeight :"bold", marginTop :"-10px" }} >Ex:3</p>
+             
+              <div style={{display :"flex", justifyContent :"flex-start" }}    >
+              <p style={{textAlign : "left", marginRight :"5px"}} >Number of seats available:</p>
+              <p style={{textAlign :"left", fontWeight :"bold" }} >{ Data.filter((e)=> e.booked_status == false).length } </p>
+              </div>
 
               <div style={{display :"flex", justifyContent :"flex-start" , flexWrap :"wrap", }} >      
-                <input  onChange={(e)=>setInteredNumber(e.target.value)} style={{width : "250px", height:"25px"}} type='number' placeholder='Enter number of seats' /> 
-                <button  onClick={()=> bookTicket(Number(interedNumber)) } style={{ width :"250px", height :"30px", marginLeft :"10px", cursor :"pointer", backgroundColor : "green"}} >Reserve Seats</button>
-                <button onClick={()=>resetbookedseat() } style={{ width :"260px", height :"30px", marginTop :"10px", cursor :"pointer", backgroundColor : "blue"}} >Reset All Seats</button>
+                <input  value={interedNumber}  onChange={(e)=>setInteredNumber(e.target.value)} style={{width : "250px", height:"25px"}} type='number' placeholder='Enter number of seats' /> 
+                <button  onClick={()=>{ bookTicket(Number(interedNumber)); setInteredNumber("") }} style={{ width :"250px", height :"30px", marginLeft :"10px", cursor :"pointer", backgroundColor : "green"}} >Reserve Seats</button>
+                <button onClick={()=>{ resetbookedseat(); setInteredNumber("")   }} style={{ width :"260px", height :"30px", marginTop :"10px", cursor :"pointer", backgroundColor : "blue"}} >Reset All Seats</button>
               </div>
             </div> 
 
